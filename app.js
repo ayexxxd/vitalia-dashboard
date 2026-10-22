@@ -11,8 +11,8 @@ const RANGOS = {
 }
 const CENTRO_INICIAL = [25.6714, -100.3098]
 const TITULO = 'Vitalia Emergencias'
-const COLOR_RECIENTE = '#d03b3b'
-const COLOR_VIEJA = '#8a8780'
+const COLOR_RECIENTE = '#f25050'
+const COLOR_VIEJA = '#71839d'
 
 const $ = (id) => document.getElementById(id)
 
@@ -140,7 +140,7 @@ function estiloMarcador(e) {
   const elegida = estado.seleccion === e.id
   return {
     radius: elegida ? 12 : reciente ? 9 : 7,
-    color: oscuro.matches ? '#1a1a19' : '#ffffff',
+    color: oscuro.matches ? '#2b2b29' : '#ffffff',
     weight: elegida ? 3 : 2,
     fillColor: reciente ? COLOR_RECIENTE : COLOR_VIEJA,
     fillOpacity: reciente || elegida ? 0.95 : 0.75,

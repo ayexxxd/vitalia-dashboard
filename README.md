@@ -6,25 +6,19 @@ Jala los datos de la API de Vitalia con `GET /emergencias` y se actualiza solo c
 
 ## Como correrlo
 
-1. En el `.env` de apivitalia agrega la clave del panel
+Antes de la primera vez:
+
+- Clona [apivitalia](https://github.com/Blackout342/apivitalia) junto a esta carpeta, que queden `apivitalia/` y `vitalia-dashboard/` lado a lado
+- Instala [uv](https://docs.astral.sh/uv/) (`brew install uv`)
+- Crea el `.env` de apivitalia como dice su README, con `CRUZ_ROJA_CLAVE=una-clave-larga` para el panel
+
+Despues, desde esta carpeta pega todo esto en la terminal. Instala lo que falte, prende la API en el 8000, la pagina en el 5500 y la abre en el navegador. Con Ctrl+C se apagan las dos.
 
 ```bash
-CRUZ_ROJA_CLAVE=una-clave-larga
+cd ../apivitalia && uv venv --allow-existing --python 3.12 .venv -q && uv pip install -q -r requirements.txt && (trap 'kill 0' EXIT; .venv/bin/uvicorn views:app --reload & (sleep 3; open http://localhost:5500) & python3 -m http.server 5500 --bind 127.0.0.1 -d ../vitalia-dashboard)
 ```
 
-2. Prende la API
-
-```bash
-uvicorn views:app --reload
-```
-
-3. En esta carpeta levanta la pagina en el puerto 5500
-
-```bash
-python3 -m http.server 5500
-```
-
-4. Abre http://localhost:5500 y entra con la direccion de la API y la clave
+En la pagina entra con `http://127.0.0.1:8000` y la clave `CRUZ_ROJA_CLAVE` del `.env`.
 
 Si la pagina vive en otro lado hay que poner esa direccion en `CORS_ORIGENES` del `.env` de la API, separadas por coma.
 

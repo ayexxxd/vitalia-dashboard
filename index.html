@@ -1,10 +1,12 @@
 <!doctype html>
 <html lang="es">
 <head>
+  <meta name="theme-color" content="#f6f4f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1c1a" media="(prefers-color-scheme: dark)">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vitalia Emergencias</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23d52b1e'/%3E%3Cpath d='M13 6h6v7h7v6h-7v7h-6v-7H6v-6h7z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%2368a68f'/%3E%3Cg transform='translate(3.6 3.6) scale(.7)' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20.5s-8-4.9-8-11A4.4 4.4 0 0 1 12 6.8a4.4 4.4 0 0 1 8 2.7c0 6.1-8 11-8 11z'/%3E%3Cpath d='M4.6 12h3.6l1.5-2.8 2.6 6 1.6-3.2h5.5'/%3E%3C/g%3E%3C/svg%3E">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -12,7 +14,9 @@
   <section id="entrada" class="entrada" hidden>
     <form id="forma-entrada" class="tarjeta-entrada">
       <div class="marca">
-        <span class="cruz" aria-hidden="true"></span>
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-8-4.9-8-11A4.4 4.4 0 0 1 12 6.8a4.4 4.4 0 0 1 8 2.7c0 6.1-8 11-8 11z"/><path d="M4.6 12h3.6l1.5-2.8 2.6 6 1.6-3.2h5.5"/></svg>
+        </span>
         <strong>Vitalia</strong>
       </div>
       <h1>Panel de emergencias</h1>
@@ -33,7 +37,9 @@
   <div id="panel" class="panel" hidden>
     <header class="barra">
       <div class="marca">
-        <span class="cruz" aria-hidden="true"></span>
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-8-4.9-8-11A4.4 4.4 0 0 1 12 6.8a4.4 4.4 0 0 1 8 2.7c0 6.1-8 11-8 11z"/><path d="M4.6 12h3.6l1.5-2.8 2.6 6 1.6-3.2h5.5"/></svg>
+        </span>
         <div class="marca-texto">
           <strong>Vitalia</strong>
           <span>Emergencias · Cruz Roja</span>
