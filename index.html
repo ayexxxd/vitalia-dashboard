@@ -1,12 +1,14 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta name="theme-color" content="#f6f4f1" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1c1c1a" media="(prefers-color-scheme: dark)">
   <meta charset="utf-8">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f6f4f1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vitalia Emergencias</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%2368a68f'/%3E%3Cg transform='translate(3.6 3.6) scale(.7)' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20.5s-8-4.9-8-11A4.4 4.4 0 0 1 12 6.8a4.4 4.4 0 0 1 8 2.7c0 6.1-8 11-8 11z'/%3E%3Cpath d='M4.6 12h3.6l1.5-2.8 2.6 6 1.6-3.2h5.5'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" sizes="32x32" href="icono/icono-32.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icono/icono-512.png">
+  <link rel="apple-touch-icon" href="icono/icono-180.png">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -14,9 +16,7 @@
   <section id="entrada" class="entrada" hidden>
     <form id="forma-entrada" class="tarjeta-entrada">
       <div class="marca">
-        <span class="logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-8-4.9-8-11A4.4 4.4 0 0 1 12 6.8a4.4 4.4 0 0 1 8 2.7c0 6.1-8 11-8 11z"/><path d="M4.6 12h3.6l1.5-2.8 2.6 6 1.6-3.2h5.5"/></svg>
-        </span>
+        <img class="logo" src="icono/icono-128.png" alt="" width="40" height="40">
         <strong>Vitalia</strong>
       </div>
       <h1>Panel de emergencias</h1>
@@ -37,12 +37,10 @@
   <div id="panel" class="panel" hidden>
     <header class="barra">
       <div class="marca">
-        <span class="logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-8-4.9-8-11A4.4 4.4 0 0 1 12 6.8a4.4 4.4 0 0 1 8 2.7c0 6.1-8 11-8 11z"/><path d="M4.6 12h3.6l1.5-2.8 2.6 6 1.6-3.2h5.5"/></svg>
-        </span>
+        <img class="logo" src="icono/icono-128.png" alt="" width="40" height="40">
         <div class="marca-texto">
           <strong>Vitalia</strong>
-          <span>Emergencias · Cruz Roja</span>
+          <span>Cruz Roja · Monterrey</span>
         </div>
       </div>
       <div class="barra-derecha">
@@ -50,43 +48,27 @@
           <span class="punto" aria-hidden="true"></span>
           <span id="estado-texto">Conectando</span>
         </span>
-        <span id="actualizado" class="actualizado"></span>
+        <span id="actualizado" class="actualizado" hidden></span>
         <button id="boton-sonido" class="boton-sec" type="button" aria-pressed="true">Sonido activado</button>
         <button id="boton-salir" class="boton-sec" type="button">Salir</button>
       </div>
     </header>
 
-    <section class="tiles" aria-label="Resumen">
-      <div class="tile principal">
-        <span class="tile-label">Últimos 30 minutos</span>
-        <span id="dato-recientes" class="tile-valor">0</span>
-      </div>
-      <div class="tile">
-        <span class="tile-label">Últimas 24 horas</span>
-        <span id="dato-dia" class="tile-valor">0</span>
-      </div>
-      <div class="tile">
-        <span class="tile-label">Total registradas</span>
-        <span id="dato-total" class="tile-valor">0</span>
-      </div>
-      <div class="tile">
-        <span class="tile-label">Sin cuenta ligada</span>
-        <span id="dato-anonimas" class="tile-valor">0</span>
-      </div>
-    </section>
-
     <main class="contenido">
       <section class="lista-col" aria-label="Lista de emergencias">
+        <div class="lista-cabeza">
+          <h2>Emergencias</h2>
+          <p id="conteo" class="conteo"></p>
+        </div>
         <div class="filtros">
           <input id="busqueda" type="search" placeholder="Buscar por nombre o teléfono" aria-label="Buscar">
           <div class="rangos" role="group" aria-label="Rango de tiempo">
             <button type="button" data-rango="30m">30 min</button>
-            <button type="button" data-rango="24h">24 h</button>
-            <button type="button" data-rango="7d">7 días</button>
+            <button type="button" data-rango="24h">Hoy</button>
+            <button type="button" data-rango="7d">Semana</button>
             <button type="button" data-rango="todas">Todas</button>
           </div>
         </div>
-        <p id="conteo" class="conteo"></p>
         <ul id="lista" class="lista"></ul>
       </section>
       <section class="mapa-col" aria-label="Mapa">

@@ -66,11 +66,13 @@ function fechaUTC(texto) {
 }
 
 const relativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' })
+// siempre en hora de Monterrey, aunque la compu este en otra zona
+const ZONA = 'America/Monterrey'
 const fechaCorta = new Intl.DateTimeFormat('es-MX', {
-  day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: ZONA,
 })
 const horaCompleta = new Intl.DateTimeFormat('es-MX', {
-  hour: '2-digit', minute: '2-digit', second: '2-digit',
+  hour: 'numeric', minute: '2-digit', timeZone: ZONA,
 })
 
 function haceCuanto(fecha) {
@@ -102,6 +104,8 @@ function normalizar(texto) {
 
 const esReciente = (e) => Date.now() - e.fecha < RECIENTE_MS
 const sinCuenta = (e) => !e.usuario_id
+// sin cuenta la app igual puede mandar el nombre, si no lo trae queda como sin cuenta
+const nombreDe = (e) => (e.datos_enviados || {}).nombre || ''
 
 function filtradas() {
   const desde = Date.now() - RANGOS[estado.rango]
@@ -111,9 +115,9 @@ function filtradas() {
     if (e.fecha.getTime() < desde) return false
     if (!q) return true
     const d = e.datos_enviados || {}
-    const texto = normalizar(sinCuenta(e) ? 'sin cuenta' : d.nombre)
+    const texto = normalizar(nombreDe(e) || 'sin cuenta')
     if (texto.includes(q)) return true
-    return qDigitos.length > 0 && (digitos(d.contacto).includes(qDigitos) || e.telefono_llamado.includes(qDigitos))
+    return qDigitos.length > 0 && (digitos(d.telefono).includes(qDigitos) || digitos(d.contacto).includes(qDigitos) || e.telefono_llamado.includes(qDigitos))
   })
 }
 
@@ -122,12 +126,10 @@ function filtradas() {
 let mapa = null
 const capaMarcadores = L.layerGroup()
 const marcadores = new Map()
-const oscuro = matchMedia('(prefers-color-scheme: dark)')
 
-// en modo oscuro el css voltea los colores del mapa
 function iniciarMapa() {
   if (mapa) return
-  mapa = L.map('mapa').setView(CENTRO_INICIAL, 11)
+  mapa = L.map('mapa').setView(CENTRO_INICIAL, 12)
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -140,7 +142,7 @@ function estiloMarcador(e) {
   const elegida = estado.seleccion === e.id
   return {
     radius: elegida ? 12 : reciente ? 9 : 7,
-    color: oscuro.matches ? '#2b2b29' : '#ffffff',
+    color: '#ffffff',
     weight: elegida ? 3 : 2,
     fillColor: reciente ? COLOR_RECIENTE : COLOR_VIEJA,
     fillOpacity: reciente || elegida ? 0.95 : 0.75,
@@ -149,7 +151,7 @@ function estiloMarcador(e) {
 
 function popupHTML(e) {
   const d = e.datos_enviados || {}
-  const nombre = sinCuenta(e) ? 'Sin cuenta' : esc(d.nombre || 'Sin nombre')
+  const nombre = esc(nombreDe(e) || (sinCuenta(e) ? 'Sin cuenta' : 'Sin nombre'))
   const sangre = sinCuenta(e) ? '' : `<br>Sangre ${esc(d.tipo_sangre || 'no sabe')}`
   return `<strong>${nombre}</strong><span class="popup-hora">${haceCuanto(e.fecha)} · ${fechaCorta.format(e.fecha)}</span>${sangre}`
 }
@@ -177,9 +179,16 @@ function pintarMapa(visibles) {
   }
 }
 
+// el area metropolitana de Monterrey. las de fuera (como el simulador en California) siguen en la lista pero no mueven el mapa
+const AREA_MONTERREY = { latMin: 25.3, latMax: 26.1, lngMin: -100.75, lngMax: -99.9 }
+const enMonterrey = (e) =>
+  e.latitud >= AREA_MONTERREY.latMin && e.latitud <= AREA_MONTERREY.latMax &&
+  e.longitud >= AREA_MONTERREY.lngMin && e.longitud <= AREA_MONTERREY.lngMax
+
 function encuadrar() {
-  const puntos = filtradas().map((e) => [e.latitud, e.longitud])
-  if (puntos.length === 1) mapa.setView(puntos[0], 15)
+  const puntos = filtradas().filter(enMonterrey).map((e) => [e.latitud, e.longitud])
+  if (puntos.length === 0) mapa.setView(CENTRO_INICIAL, 12)
+  else if (puntos.length === 1) mapa.setView(puntos[0], 15)
   else if (puntos.length > 1) mapa.fitBounds(puntos, { padding: [40, 40], maxZoom: 15 })
 }
 
@@ -196,61 +205,54 @@ function itemHTML(e) {
   const lat = Number(e.latitud).toFixed(6)
   const lng = Number(e.longitud).toFixed(6)
 
-  const nombre = sinCuenta(e)
-    ? '<span class="em-nombre anonimo">Sin cuenta</span>'
-    : `<span class="em-nombre">${esc(d.nombre || 'Sin nombre')}</span>`
+  const nombre = nombreDe(e)
+    ? `<span class="em-nombre">${esc(nombreDe(e))}</span>`
+    : `<span class="em-nombre anonimo">${sinCuenta(e) ? 'Sin cuenta' : 'Sin nombre'}</span>`
 
   const insignia = esReciente(e)
     ? '<span class="insignia critica"><span class="pulso" aria-hidden="true"></span>Reciente</span>'
     : ''
 
-  const contacto = d.contacto
-    ? `<a href="tel:${digitos(d.contacto)}">${esc(telefono(d.contacto))}</a>`
-    : 'Sin contacto'
-
+  // la api dice de donde vino en origen, las viejas no lo tienen
+  const desde = { telefono: 'desde el celular ', reloj: 'desde el reloj ' }[e.origen] || ''
   const ficha = sinCuenta(e)
-    ? '<p class="em-nota">Mandada desde el reloj sin cuenta ligada, no hay ficha médica.</p>'
-    : `<dl class="em-datos">
-        <div><dt>Sangre</dt><dd class="sangre">${esc(d.tipo_sangre || 'No sabe')}</dd></div>
-        <div><dt>Contacto</dt><dd>${contacto}</dd></div>
-        <div class="ancho"><dt>Alergias</dt><dd>${esc(d.alergias || 'Ninguna registrada')}</dd></div>
-      </dl>`
+    ? `<p class="em-nota">Enviada ${desde}sin cuenta, no hay ficha médica.</p>`
+    : `<p class="em-ficha">
+        <span><b>Sangre</b> ${esc(d.tipo_sangre || 'no sabe')}</span>
+        <span><b>Alergias</b> ${esc(d.alergias || 'ninguna')}</span>
+      </p>`
+
+  // el telefono de la persona, para llamarle directo. las de antes de que la api lo guardara no lo traen
+  const suTelefono = d.telefono
+    ? `<a class="em-telefono" href="tel:${digitos(d.telefono)}">${esc(telefono(d.telefono))}</a>`
+    : '<span class="em-telefono sin">Sin teléfono</span>'
+
+  const acciones = [
+    d.contacto && `<a class="accion" href="tel:${digitos(d.contacto)}">Contacto · ${esc(telefono(d.contacto))}</a>`,
+    `<a class="accion sec" href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener">Abrir en Maps</a>`,
+  ].filter(Boolean).join('')
 
   return `<li class="${clases}" data-id="${esc(e.id)}" tabindex="0">
     <div class="em-cabeza">${nombre}${insignia}</div>
-    <div class="em-hora"><time datetime="${e.fecha.toISOString()}">${haceCuanto(e.fecha)}</time> · ${fechaCorta.format(e.fecha)}</div>
+    ${suTelefono}
+    <div class="em-hora"><time datetime="${e.fecha.toISOString()}" title="${fechaCorta.format(e.fecha)}">${haceCuanto(e.fecha)}</time> · llamó al ${esc(e.telefono_llamado)}</div>
     ${ficha}
-    <div class="em-pie">
-      <span>Llamó al <strong>${esc(e.telefono_llamado)}</strong></span>
-      <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener">${lat}, ${lng}</a>
-    </div>
+    <div class="em-acciones">${acciones}</div>
   </li>`
 }
 
 function pintarLista(visibles) {
   const total = estado.emergencias.length
   $('conteo').textContent = visibles.length === total
-    ? `${total} emergencias`
-    : `${visibles.length} de ${total} emergencias`
+    ? `${total} en total`
+    : `${visibles.length} de ${total}`
   $('lista').innerHTML = visibles.length
     ? visibles.map(itemHTML).join('')
-    : '<li class="vacio">No hay emergencias con estos filtros.</li>'
-}
-
-function pintarResumen() {
-  const ahora = Date.now()
-  const contar = (ms) => estado.emergencias.filter((e) => ahora - e.fecha < ms).length
-  const recientes = contar(RECIENTE_MS)
-  $('dato-recientes').textContent = recientes.toLocaleString('es-MX')
-  $('dato-dia').textContent = contar(RANGOS['24h']).toLocaleString('es-MX')
-  $('dato-total').textContent = estado.emergencias.length.toLocaleString('es-MX')
-  $('dato-anonimas').textContent = estado.emergencias.filter(sinCuenta).length.toLocaleString('es-MX')
-  $('dato-recientes').parentElement.classList.toggle('alerta', recientes > 0)
+    : '<li class="vacio">Todo tranquilo por aquí. No hay emergencias en este rango.</li>'
 }
 
 function pintar() {
   const visibles = filtradas()
-  pintarResumen()
   pintarLista(visibles)
   pintarMapa(visibles)
   for (const boton of document.querySelectorAll('[data-rango]')) {
@@ -339,7 +341,7 @@ function marcarConexion(ok, mensaje) {
   $('estado').className = 'estado ' + (ok ? 'vivo' : 'caido')
   $('estado-texto').textContent = ok ? 'En vivo' : 'Sin conexión'
   $('estado').title = ok ? '' : mensaje || ''
-  if (ok) $('actualizado').textContent = 'Actualizado ' + horaCompleta.format(new Date())
+  if (ok) $('estado').title = 'Actualizado ' + horaCompleta.format(new Date())
 }
 
 async function ciclo() {
