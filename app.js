@@ -29,7 +29,7 @@ function guardar(almacen, clave, valor) {
 
 // la clave vive solo en esta pestaña y se borra al cerrarla
 const estado = {
-  api: leer(localStorage, 'vitalia.api') || 'http://127.0.0.1:8000',
+  api: leer(localStorage, 'vitalia.api') || 'https://c1eoch7yl5.execute-api.us-east-2.amazonaws.com',
   clave: leer(sessionStorage, 'vitalia.clave') || '',
   emergencias: [],
   conocidas: null,

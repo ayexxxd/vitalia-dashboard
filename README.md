@@ -6,6 +6,10 @@ Jala los datos de la API de Vitalia con `GET /emergencias` y se actualiza solo c
 
 ## Como correrlo
 
+La API ya vive en AWS en `https://c1eoch7yl5.execute-api.us-east-2.amazonaws.com` y el panel la trae por defecto. Basta con servir esta carpeta (`python3 -m http.server 5500 --bind 127.0.0.1`), abrir http://127.0.0.1:5500 y entrar con la clave `CRUZ_ROJA_CLAVE`.
+
+Para correr la API local en vez de AWS:
+
 Antes de la primera vez:
 
 - Clona [apivitalia](https://github.com/Blackout342/apivitalia) junto a esta carpeta, que queden `apivitalia/` y `vitalia-dashboard/` lado a lado
