@@ -1,4 +1,5 @@
-/* Misma paleta que MedicinaTheme en la app (TC2007B/Vitalia/Theme/Theme.swift). Solo tema claro. */
+/* Misma paleta que MedicinaTheme en la app (TC2007B/Vitalia/Theme/Theme.swift).
+   El tema oscuro cambia los mismos nombres de color en :root[data-tema="oscuro"]. */
 :root {
   --cream: #f6f4f1;
   --teal: #3e5659;
@@ -16,7 +17,28 @@
   --critico: var(--coral);
   --critico-fondo: #fdf0ee;
   --sombra: 0 1px 2px rgb(62 86 89 / 0.05), 0 8px 24px rgb(62 86 89 / 0.06);
+  --hover: #fbfaf8;
+  --mapa-fondo: #eef0ec;
+  /* el texto que va encima del verde */
+  --sobre-accent: #ffffff;
   color-scheme: light;
+}
+
+:root[data-tema="oscuro"] {
+  --bg: #111615;
+  --surface: #1a2120;
+  --text: #e4ebe9;
+  --text-2: #9aa7b6;
+  --linea: rgb(255 255 255 / 0.09);
+  --accent: #7fc4aa;
+  --accent-fondo: rgb(127 196 170 / 0.14);
+  --critico: #f25f5f;
+  --critico-fondo: #3a1f22;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+  --hover: #202826;
+  --mapa-fondo: #1d2423;
+  --sobre-accent: #0e1715;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -93,7 +115,7 @@ button, input { font: inherit; color: inherit; }
   border: 0;
   border-radius: 16px;
   background: var(--accent);
-  color: #fff;
+  color: var(--sobre-accent);
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
@@ -147,22 +169,27 @@ button, input { font: inherit; color: inherit; }
 
 .barra-derecha { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+/* aviso de "Sin conexión", solo se ve cuando la api falla */
 .estado {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 6px 14px 6px 12px;
   border-radius: 999px;
-  background: var(--accent-fondo);
+  background: var(--critico-fondo);
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
 }
 
-.estado .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--text-2); }
-.estado.vivo .punto { background: var(--accent); }
-.estado.caido { background: var(--critico-fondo); }
-.estado.caido .punto { background: var(--critico); }
+.estado .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--critico); }
+
+/* luna en el tema claro, sol en el oscuro */
+.boton-tema { display: inline-grid; place-items: center; padding: 7px; }
+.boton-tema svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.boton-tema .icono-sol { display: none; }
+:root[data-tema="oscuro"] .boton-tema .icono-sol { display: block; }
+:root[data-tema="oscuro"] .boton-tema .icono-luna { display: none; }
 
 .boton-sec {
   padding: 7px 12px;
@@ -241,7 +268,7 @@ button, input { font: inherit; color: inherit; }
 
 .rangos button:hover { background: var(--bg); color: var(--text); }
 
-.rangos button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.rangos button[aria-pressed="true"] { background: var(--accent); color: var(--sobre-accent); }
 
 .lista {
   list-style: none;
@@ -263,7 +290,7 @@ button, input { font: inherit; color: inherit; }
   transition: background 0.15s, border-color 0.15s;
 }
 
-.emergencia:hover { background: #fbfaf8; }
+.emergencia:hover { background: var(--hover); }
 .emergencia:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .emergencia.reciente { background: var(--critico-fondo); border-color: rgb(242 80 80 / 0.25); }
 .emergencia.activa { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
@@ -339,17 +366,29 @@ button, input { font: inherit; color: inherit; }
 
 .em-nota { margin: 10px 0 0; font-size: 14px; color: var(--text-2); }
 
-/* lo que conto la persona con su voz */
+/* lo que conto la persona con su voz. es un boton porque al darle clic se copia */
 .em-paso {
+  display: block;
+  width: 100%;
   margin: 10px 0 0;
   padding: 8px 10px;
+  border: 0;
   font-size: 15px;
   line-height: 1.4;
+  text-align: left;
   background: var(--accent-fondo);
   border-radius: 10px;
+  cursor: copy;
 }
 
-.em-paso b { display: block; color: var(--accent); font-weight: 700; font-size: 13px; }
+.em-paso:hover { box-shadow: inset 0 0 0 1px var(--accent); }
+.em-paso:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.em-paso b { display: flex; justify-content: space-between; gap: 8px; color: var(--accent); font-weight: 700; font-size: 13px; }
+
+/* "Copiar" solo aparece al pasar el mouse para no llenar la tarjeta */
+.em-paso .pista { font-weight: 600; color: var(--text-2); opacity: 0; transition: opacity 0.15s; }
+.em-paso:hover .pista, .em-paso:focus-visible .pista { opacity: 1; }
 
 .em-acciones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 
@@ -366,9 +405,60 @@ button, input { font: inherit; color: inherit; }
 
 button.accion { border: 0; font-family: inherit; cursor: pointer; }
 
-.accion:hover { background: var(--accent); color: #fff; }
+.accion:hover { background: var(--accent); color: var(--sobre-accent); }
 .accion.sec { background: transparent; color: var(--accent); padding-left: 4px; }
 .accion.sec:hover { background: var(--accent-fondo); color: var(--text); }
+
+/* historial medico que se despliega */
+
+.em-historial {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--linea);
+}
+
+.em-historial summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  list-style: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  border-radius: 8px;
+}
+
+.em-historial summary::-webkit-details-marker { display: none; }
+
+/* flechita que apunta a la derecha y gira hacia abajo al abrir */
+.em-historial summary::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin: 0 2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+
+.em-historial[open] summary::before { transform: rotate(45deg); }
+.em-historial summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.hist-resumen { font-size: 13px; font-weight: 500; color: var(--text-2); }
+
+.hist-seccion { margin-top: 10px; font-size: 15px; line-height: 1.45; }
+.hist-seccion b { display: block; margin-bottom: 2px; font-size: 13px; font-weight: 700; color: var(--accent); }
+.hist-seccion p { margin: 0; }
+.hist-seccion ul { margin: 0; padding-left: 18px; }
+.hist-seccion li span { color: var(--text-2); }
+.hist-seccion a { color: var(--accent); font-weight: 600; text-decoration: none; font-variant-numeric: tabular-nums; }
+.hist-seccion a:hover { text-decoration: underline; }
+
+.hist-seccion ul.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; padding: 0; list-style: none; }
+.chips li { padding: 3px 10px; border-radius: 999px; background: var(--accent-fondo); font-size: 13px; font-weight: 600; }
 
 .mapa-col {
   border-radius: 24px;
@@ -377,17 +467,23 @@ button.accion { border: 0; font-family: inherit; cursor: pointer; }
   box-shadow: var(--sombra);
 }
 
-#mapa { width: 100%; height: 100%; background: #eef0ec; }
+#mapa { width: 100%; height: 100%; background: var(--mapa-fondo); }
 
 .leaflet-container { font-family: inherit; }
 /* el mapa de OSM mas suave para que combine con la paleta */
 .leaflet-tile-pane { filter: saturate(0.55) brightness(1.04) contrast(0.92); }
+/* en oscuro se invierten los colores del mapa. el giro de 180 grados regresa el agua a azul y los parques a verde */
+:root[data-tema="oscuro"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(0.45) brightness(0.9) contrast(0.88); }
 .leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: var(--sombra); }
-.leaflet-popup-content { margin: 10px 14px; font-size: 13px; line-height: 1.4; color: var(--teal); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--text); }
+.leaflet-popup-content { margin: 10px 14px; font-size: 13px; line-height: 1.4; color: var(--text); }
 .leaflet-popup-content strong { display: block; font-size: 15px; }
-.popup-hora { color: var(--slate); }
+.popup-hora { color: var(--text-2); }
 .leaflet-bar { border: 0 !important; box-shadow: var(--sombra) !important; }
-.leaflet-bar a { color: var(--teal); }
+.leaflet-bar a, .leaflet-bar a:hover { color: var(--text); background-color: var(--surface); border-bottom-color: var(--linea); }
+.leaflet-bar a:hover { background-color: var(--hover); }
+.leaflet-container .leaflet-control-attribution { background: var(--surface); color: var(--text-2); opacity: 0.85; }
+.leaflet-container .leaflet-control-attribution a { color: var(--accent); }
 
 @media (max-width: 860px) {
   .barra { padding: 12px 16px; }

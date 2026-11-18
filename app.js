@@ -35,9 +35,10 @@ const estado = {
   conocidas: null,
   nuevas: new Set(),
   seleccion: null,
+  // las que tienen el historial medico abierto, para que no se cierre cuando se actualiza la lista
+  abiertas: new Set(),
   rango: 'todas',
   busqueda: '',
-  sonido: leer(localStorage, 'vitalia.sonido') !== 'no',
   sinVer: 0,
   timer: null,
 }
@@ -71,9 +72,6 @@ const ZONA = 'America/Monterrey'
 const fechaCorta = new Intl.DateTimeFormat('es-MX', {
   day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: ZONA,
 })
-const horaCompleta = new Intl.DateTimeFormat('es-MX', {
-  hour: 'numeric', minute: '2-digit', timeZone: ZONA,
-})
 
 function haceCuanto(fecha) {
   const s = Math.round((fecha - Date.now()) / 1000)
@@ -97,6 +95,19 @@ function telefono(valor) {
   const d = digitos(valor)
   return d.length === 10 ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : d
 }
+
+// fecha_nacimiento viene como "1951-03-02"
+function edad(fecha) {
+  const partes = /^(\d{4})-(\d\d)-(\d\d)/.exec(fecha || '')
+  if (!partes) return null
+  const [, anio, mes, dia] = partes.map(Number)
+  const hoy = new Date()
+  const yaCumplio = hoy.getMonth() + 1 > mes || (hoy.getMonth() + 1 === mes && hoy.getDate() >= dia)
+  const anios = hoy.getFullYear() - anio - (yaCumplio ? 0 : 1)
+  return anios >= 0 && anios < 130 ? anios : null
+}
+
+const plural = (n, una, varias) => `${n} ${n === 1 ? una : varias}`
 
 function normalizar(texto) {
   return String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -216,9 +227,11 @@ function itemHTML(e) {
 
   // la api dice de donde vino en origen, las viejas no lo tienen
   const desde = { telefono: 'desde el celular ', reloj: 'desde el reloj ' }[e.origen] || ''
+  const anios = edad(d.fecha_nacimiento)
   const ficha = sinCuenta(e)
     ? `<p class="em-nota">Enviada ${desde}sin cuenta, no hay ficha médica.</p>`
     : `<p class="em-ficha">
+        ${anios === null ? '' : `<span><b>Edad</b> ${anios} años</span>`}
         <span><b>Sangre</b> ${esc(d.tipo_sangre || 'no sabe')}</span>
         <span><b>Alergias</b> ${esc(d.alergias || 'ninguna')}</span>
       </p>`
@@ -234,9 +247,12 @@ function itemHTML(e) {
     `<button type="button" class="accion sec" data-copiar="${lat}, ${lng}" title="${lat}, ${lng}">Copiar coordenadas</button>`,
   ].filter(Boolean).join('')
 
-  // lo que la persona conto con su voz despues de pedir ayuda. lo que dijo tal cual va en el title
+  // lo que la persona conto con su voz despues de pedir ayuda. al darle clic se copia
+  // y lo que dijo tal cual va en el title
   const paso = e.descripcion
-    ? `<p class="em-paso" title="${esc(e.transcripcion || '')}"><b>Qué pasó</b> ${esc(e.descripcion)}</p>`
+    ? `<button type="button" class="em-paso" data-copiar="${esc(e.descripcion)}" title="${esc(e.transcripcion || 'Copiar')}">
+        <b><span data-aviso>Qué pasó</span><span class="pista">Copiar</span></b>${esc(e.descripcion)}
+      </button>`
     : ''
 
   return `<li class="${clases}" data-id="${esc(e.id)}" tabindex="0">
@@ -246,7 +262,45 @@ function itemHTML(e) {
     ${paso}
     ${ficha}
     <div class="em-acciones">${acciones}</div>
+    ${historialHTML(e)}
   </li>`
+}
+
+// el resto del historial que la api copio al pedir ayuda. las de antes y las sin cuenta no lo traen
+function historialHTML(e) {
+  const d = e.datos_enviados || {}
+  if (sinCuenta(e) || !Array.isArray(d.enfermedades)) return ''
+  const enfermedades = d.enfermedades
+  const medicinas = d.medicinas || []
+  const antecedentes = d.antecedentes || []
+  const contactos = d.contactos || []
+
+  const secciones = [
+    enfermedades.length && ['Enfermedades',
+      `<ul class="chips">${enfermedades.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`],
+    medicinas.length && ['Medicinas',
+      `<ul>${medicinas.map((m) => `<li>${esc(m.nombre)}${m.dosis ? ` <span>${esc(m.dosis)}</span>` : ''}</li>`).join('')}</ul>`],
+    antecedentes.length && ['Antecedentes',
+      `<ul>${antecedentes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`],
+    d.notas && ['Notas', `<p>${esc(d.notas)}</p>`],
+    contactos.length && ['Contactos',
+      `<ul>${contactos.map((c) => `<li>${esc(c.nombre)}${c.parentesco ? ` <span>${esc(c.parentesco)}</span>` : ''}
+        <a href="tel:${digitos(c.telefono)}">${esc(telefono(c.telefono))}</a></li>`).join('')}</ul>`],
+  ].filter(Boolean)
+
+  const resumen = [
+    enfermedades.length && plural(enfermedades.length, 'enfermedad', 'enfermedades'),
+    medicinas.length && plural(medicinas.length, 'medicina', 'medicinas'),
+  ].filter(Boolean).join(' · ') || (secciones.length ? '' : 'sin datos')
+
+  const cuerpo = secciones.length
+    ? secciones.map(([titulo, html]) => `<div class="hist-seccion"><b>${titulo}</b>${html}</div>`).join('')
+    : '<p class="em-nota">No registró enfermedades, medicinas ni antecedentes.</p>'
+
+  return `<details class="em-historial" data-historial="${esc(e.id)}"${estado.abiertas.has(e.id) ? ' open' : ''}>
+    <summary>Historial médico <span class="hist-resumen">${resumen}</span></summary>
+    ${cuerpo}
+  </details>`
 }
 
 function pintarLista(visibles) {
@@ -284,7 +338,6 @@ function seleccionar(id, mover = true) {
 let audio = null
 
 function sonar() {
-  if (!estado.sonido) return
   try {
     audio ??= new AudioContext()
     const t = audio.currentTime
@@ -346,10 +399,9 @@ function recibir(datos) {
 }
 
 function marcarConexion(ok, mensaje) {
-  $('estado').className = 'estado ' + (ok ? 'vivo' : 'caido')
-  $('estado-texto').textContent = ok ? 'En vivo' : 'Sin conexión'
+  // el aviso de "Sin conexión" solo se ve cuando la api falla, con el error en el title
+  $('estado').hidden = ok
   $('estado').title = ok ? '' : mensaje || ''
-  if (ok) $('estado').title = 'Actualizado ' + horaCompleta.format(new Date())
 }
 
 async function ciclo() {
@@ -426,17 +478,27 @@ $('forma-entrada').addEventListener('submit', async (ev) => {
 
 $('boton-salir').addEventListener('click', () => salir())
 
-$('boton-sonido').addEventListener('click', () => {
-  estado.sonido = !estado.sonido
-  guardar(localStorage, 'vitalia.sonido', estado.sonido ? 'si' : 'no')
-  pintarBotonSonido()
-  if (estado.sonido) sonar()
+/* tema claro y oscuro. el head ya puso el de inicio en <html data-tema> */
+
+const COLOR_BARRA = { claro: '#f6f4f1', oscuro: '#111615' }
+
+function ponerTema(tema) {
+  document.documentElement.dataset.tema = tema
+  document.querySelector('meta[name="theme-color"]').content = COLOR_BARRA[tema]
+  $('boton-tema').setAttribute('aria-pressed', String(tema === 'oscuro'))
+  $('boton-tema').title = tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'
+}
+
+$('boton-tema').addEventListener('click', () => {
+  const tema = document.documentElement.dataset.tema === 'oscuro' ? 'claro' : 'oscuro'
+  guardar(localStorage, 'vitalia.tema', tema)
+  ponerTema(tema)
 })
 
-function pintarBotonSonido() {
-  $('boton-sonido').setAttribute('aria-pressed', String(estado.sonido))
-  $('boton-sonido').textContent = estado.sonido ? 'Sonido activado' : 'Sonido apagado'
-}
+// mientras nadie elija con el boton, el panel cambia junto con el sistema
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (ev) => {
+  if (!leer(localStorage, 'vitalia.tema')) ponerTema(ev.matches ? 'oscuro' : 'claro')
+})
 
 $('busqueda').addEventListener('input', (ev) => {
   estado.busqueda = ev.target.value
@@ -453,14 +515,24 @@ for (const boton of document.querySelectorAll('[data-rango]')) {
 
 $('lista').addEventListener('click', (ev) => {
   const copiar = ev.target.closest('[data-copiar]')
-  if (copiar) return copiarCoordenadas(copiar)
-  if (ev.target.closest('a')) return
+  if (copiar) return copiarTexto(copiar)
+  // abrir el historial no redibuja la lista, si no se cerraria solo
+  if (ev.target.closest('a, summary')) return
   const item = ev.target.closest('[data-id]')
   if (item) seleccionar(item.dataset.id)
 })
 
-// pone "lat, lng" en el portapapeles y el boton avisa un momento que ya se copio
-async function copiarCoordenadas(boton) {
+// toggle no sube por el arbol, por eso se escucha en captura
+$('lista').addEventListener('toggle', (ev) => {
+  const id = ev.target.dataset?.historial
+  if (!id) return
+  if (ev.target.open) estado.abiertas.add(id)
+  else estado.abiertas.delete(id)
+}, true)
+
+// pone el texto de data-copiar en el portapapeles y avisa un momento que ya se copio.
+// el aviso sale en el [data-aviso] de adentro, o en el boton entero si no tiene
+async function copiarTexto(boton) {
   const texto = boton.dataset.copiar
   try {
     await navigator.clipboard.writeText(texto)
@@ -473,8 +545,11 @@ async function copiarCoordenadas(boton) {
     document.execCommand('copy')
     campo.remove()
   }
-  boton.textContent = 'Copiado'
-  setTimeout(() => { boton.textContent = 'Copiar coordenadas' }, 1500)
+  const aviso = boton.querySelector('[data-aviso]') || boton
+  // se guarda el texto de antes una sola vez, asi dos clics seguidos no lo dejan en "Copiado"
+  aviso.dataset.original ??= aviso.textContent
+  aviso.textContent = 'Copiado'
+  setTimeout(() => { aviso.textContent = aviso.dataset.original }, 1500)
 }
 
 $('lista').addEventListener('keydown', (ev) => {
@@ -488,7 +563,7 @@ $('lista').addEventListener('keydown', (ev) => {
 
 /* arranque */
 
-pintarBotonSonido()
+ponerTema(document.documentElement.dataset.tema === 'oscuro' ? 'oscuro' : 'claro')
 
 if (estado.clave) {
   pedirEmergencias(estado.api, estado.clave)
