@@ -364,6 +364,8 @@ button, input { font: inherit; color: inherit; }
   font-variant-numeric: tabular-nums;
 }
 
+button.accion { border: 0; font-family: inherit; cursor: pointer; }
+
 .accion:hover { background: var(--accent); color: #fff; }
 .accion.sec { background: transparent; color: var(--accent); padding-left: 4px; }
 .accion.sec:hover { background: var(--accent-fondo); color: var(--text); }

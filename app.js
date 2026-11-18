@@ -231,6 +231,7 @@ function itemHTML(e) {
   const acciones = [
     d.contacto && `<a class="accion" href="tel:${digitos(d.contacto)}">Contacto · ${esc(telefono(d.contacto))}</a>`,
     `<a class="accion sec" href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener">Abrir en Maps</a>`,
+    `<button type="button" class="accion sec" data-copiar="${lat}, ${lng}" title="${lat}, ${lng}">Copiar coordenadas</button>`,
   ].filter(Boolean).join('')
 
   // lo que la persona conto con su voz despues de pedir ayuda. lo que dijo tal cual va en el title
@@ -451,10 +452,30 @@ for (const boton of document.querySelectorAll('[data-rango]')) {
 }
 
 $('lista').addEventListener('click', (ev) => {
+  const copiar = ev.target.closest('[data-copiar]')
+  if (copiar) return copiarCoordenadas(copiar)
   if (ev.target.closest('a')) return
   const item = ev.target.closest('[data-id]')
   if (item) seleccionar(item.dataset.id)
 })
+
+// pone "lat, lng" en el portapapeles y el boton avisa un momento que ya se copio
+async function copiarCoordenadas(boton) {
+  const texto = boton.dataset.copiar
+  try {
+    await navigator.clipboard.writeText(texto)
+  } catch {
+    // si el navegador no deja usar el portapapeles se copia a la antigua
+    const campo = document.createElement('textarea')
+    campo.value = texto
+    document.body.append(campo)
+    campo.select()
+    document.execCommand('copy')
+    campo.remove()
+  }
+  boton.textContent = 'Copiado'
+  setTimeout(() => { boton.textContent = 'Copiar coordenadas' }, 1500)
+}
 
 $('lista').addEventListener('keydown', (ev) => {
   if (ev.key !== 'Enter' && ev.key !== ' ') return
