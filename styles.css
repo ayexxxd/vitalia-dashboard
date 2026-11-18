@@ -339,6 +339,18 @@ button, input { font: inherit; color: inherit; }
 
 .em-nota { margin: 10px 0 0; font-size: 14px; color: var(--text-2); }
 
+/* lo que conto la persona con su voz */
+.em-paso {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  font-size: 15px;
+  line-height: 1.4;
+  background: var(--accent-fondo);
+  border-radius: 10px;
+}
+
+.em-paso b { display: block; color: var(--accent); font-weight: 700; font-size: 13px; }
+
 .em-acciones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 
 .accion {

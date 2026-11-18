@@ -153,7 +153,8 @@ function popupHTML(e) {
   const d = e.datos_enviados || {}
   const nombre = esc(nombreDe(e) || (sinCuenta(e) ? 'Sin cuenta' : 'Sin nombre'))
   const sangre = sinCuenta(e) ? '' : `<br>Sangre ${esc(d.tipo_sangre || 'no sabe')}`
-  return `<strong>${nombre}</strong><span class="popup-hora">${haceCuanto(e.fecha)} · ${fechaCorta.format(e.fecha)}</span>${sangre}`
+  const paso = e.descripcion ? `<br><em>${esc(e.descripcion)}</em>` : ''
+  return `<strong>${nombre}</strong><span class="popup-hora">${haceCuanto(e.fecha)} · ${fechaCorta.format(e.fecha)}</span>${sangre}${paso}`
 }
 
 function pintarMapa(visibles) {
@@ -232,10 +233,16 @@ function itemHTML(e) {
     `<a class="accion sec" href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener">Abrir en Maps</a>`,
   ].filter(Boolean).join('')
 
+  // lo que la persona conto con su voz despues de pedir ayuda. lo que dijo tal cual va en el title
+  const paso = e.descripcion
+    ? `<p class="em-paso" title="${esc(e.transcripcion || '')}"><b>Qué pasó</b> ${esc(e.descripcion)}</p>`
+    : ''
+
   return `<li class="${clases}" data-id="${esc(e.id)}" tabindex="0">
     <div class="em-cabeza">${nombre}${insignia}</div>
     ${suTelefono}
     <div class="em-hora"><time datetime="${e.fecha.toISOString()}" title="${fechaCorta.format(e.fecha)}">${haceCuanto(e.fecha)}</time> · llamó al ${esc(e.telefono_llamado)}</div>
+    ${paso}
     ${ficha}
     <div class="em-acciones">${acciones}</div>
   </li>`
